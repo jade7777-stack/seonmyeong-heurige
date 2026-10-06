@@ -1,2 +1,9 @@
-# seonmyeong-heurige
-Grade 5 art web app (Visang Art 5, unit 4): air persective painting
+# 선명하게, 흐리게
+
+5학년 미술(비상교육 『미술 5』 이재영) 4단원 「실감 나는 사물과 풍경」에서 공기 원근법을 활용하여 채색하기(교과서 25~26쪽 ④)를 하는 학생용 웹앱입니다.
+
+- 열기: https://seonmyeong-heurige.vercel.app
+- 흐름: 다시 보기 → 물 조절 연습 → 내 밑그림 가져오기 → 공기 원근법으로 칠하기 → 돋보기로 돌아보기 → 샘보드 카드 → 오늘의 한 문장
+- 앞 시간 「가까이, 멀리」(https://nemo-ane-damgi.vercel.app)에서 저장한 밑그림을 불러와 칠합니다.
+- 학생이 쓴 글과 그림은 서버로 보내지 않고 그 기기 브라우저에만 저장됩니다.
+- 교과서 삽화와 작품이 들어 있어 수업용으로만 써 주세요.
