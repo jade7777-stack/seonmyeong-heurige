@@ -2342,13 +2342,25 @@ document.addEventListener('click',function(e){
   var o=e.target.closest('[data-open]');
   if(o){ var d=document.getElementById(o.dataset.open);
     if(d && d.id==='recordDlg') updateSummary();
-    if(d && !d.open){ $$('dialog[open]').forEach(function(x){ x.close(); }); d.showModal(); }
+    if(d && !d.open){ $$('dialog[open]').forEach(function(x){ x.close(); }); d.showModal();
+      /* 열 때마다 맨 위부터 — 차례는 지금 장이 보이게 */
+      d.scrollTop=0; var db=d.querySelector('.dlg-body'); if(db) db.scrollTop=0;
+      if(d.id==='sceneDlg'){ var cl=d.querySelector('.scene-link[aria-current="true"]'); if(cl) cl.scrollIntoView({block:'nearest'}); } }
     return; }
   if(e.target.closest('[data-close]')){ var dd=e.target.closest('dialog'); if(dd) dd.close(); return; }
   var g=e.target.closest('[data-go]'); if(g && !g.disabled){ goId(g.dataset.go); return; }
   var p=e.target.closest('[data-print]'); if(p){ doPrint(p.dataset.print); return; }
 });
 $$('dialog').forEach(function(d){ d.addEventListener('close',function(){ if(toastEl.parentNode===d) document.body.appendChild(toastEl); }); });
+/* 창 바깥(어두운 곳)을 누르면 닫힌다 — 완성 예시 창과 같게. 카메라 창은 [찰칵] 직후 누름 막기가 있어 빼고, 완성 예시 창은 따로 처리 */
+$$('dialog').forEach(function(d){
+  if(d.id==='camDlg' || d.id==='exDlg') return;
+  d.addEventListener('click',function(e){
+    if(e.target!==d) return;
+    var r=d.getBoundingClientRect();
+    if(e.clientX<r.left || e.clientX>r.right || e.clientY<r.top || e.clientY>r.bottom) d.close();
+  });
+});
 /* 완성 예시 창 — 칠하기 '?' 풍선의 [완성 예시 보기]로 연다. ✕·Esc·바깥(어두운 곳)을 누르면 닫히고, 초점은 연 단추로 돌아간다.
    풍선은 연 채로 둔다(풍선 스크립트가 이 창 안의 누름·Esc 로는 풍선을 닫지 않는다). 그림은 EXAMPLE_PAINT 한 줄 — 인쇄·카드에는 쓰지 않는다 */
 (function(){
@@ -3560,7 +3572,7 @@ var SK=(function(){
   }
   function activate(){ loadSrc(function(){ paintUI(); draw(); }); paintUI(); requestAnimationFrame(draw); }
   return { init:init, activate:activate, draw:draw, took:took, use:use,
-           has:function(){ return !!src(); }, kindName:function(){ return KIND_NAME[kind()]||''; } };
+           has:function(){ return !!src(); }, kindName:function(k){ return KIND_NAME[k||kind()]||''; } };
 })();
 
 /* ============ 칠하기 — [화면에] 수채 붓 · [종이에 칠했어요] 사진 두 장 ============ */
@@ -3723,6 +3735,8 @@ function workURL(cb){
 function beforeURL(){ return (workKind()==='paper' && data.pDone && data.pMid) ? data.pMid : (data.base||''); }
 /* 연습용 밑그림(가로수 길 = 교과서 26쪽 이채원 학생 밑그림, 기찻길 = 활동지)은 카드·인쇄에서 내 밑그림으로 읽히지 않게 출처를 붙인다 */
 function practiceFrom(k){ return k==='book'?'교과서 이채원':(k==='rail'?'활동지':''); }
+/* 지금 칠하기 종이에 깔린 밑그림의 종류 — 밑그림을 바꾸려다 [취소]하면 고른 것(skKind)과 쓰는 것(baseKind)이 다르다 */
+function usedKind(){ return data.base ? (data.baseKind||data.skKind) : data.skKind; }
 function beforeFrom(){ return (workKind()==='paper' && data.pDone && data.pMid) ? '' : practiceFrom(data.baseKind||data.skKind); }
 function beforeName(){ return (workKind()==='paper' && data.pDone && data.pMid) ? '칠하는 중' : (beforeFrom()?'연습용 밑그림':'밑그림'); }
 var LENS_DEF_MINE={near:{x:0.80,y:0.72},far:{x:0.42,y:0.42}};
@@ -3763,7 +3777,7 @@ function updateSummary(){
   var wk=workKind();
   var rows=[
     ['물 조절 연습', (data.wpMode==='paper' && data.wpPhoto) ? '종이 연습 사진' : (WP.count()?WP.count()+'번 칠했어요':'')],
-    ['밑그림', SK.kindName()+(data.base?' · 준비됨':'')],
+    ['밑그림', SK.kindName(usedKind())+(data.base?' · 준비됨':'')],
     ['칠하기', wk==='paper' ? '종이 · 사진 '+((data.pMid?1:0)+(data.pDone?1:0))+'장' : (PT.count()?'화면 · '+PT.count()+'번 칠했어요':'')],
     ['가까운 곳',data.nearHow],['먼 곳',data.farHow],['고치고 싶은 곳',data.fixWhat],
     ['과정 돌아보기',chk?chk+' / 3':''],['스스로 확인',data.star?starText():''],
@@ -4124,7 +4138,7 @@ function resultSheet(imgs){
   var fig=function(u,cap){ return '<figure><figcaption>'+cap+'</figcaption>'+(u?'<img src="'+u+'" alt="">':'<div class="pnone"></div>')+'</figure>'; };
   return '<section class="print-page"><h1><span>주변 풍경을 실감 나게 그리기 · 내 기록</span>'+PDECO+'</h1>'+pmeta()
     +'<p class="pstd">'+esc(STD)+'</p>'
-    +'<table class="pt">'+row('작품 제목',pv(data.artTitle))+row('밑그림',(esc(SK.kindName())+(practiceFrom(data.skKind)?' · '+practiceFrom(data.skKind):''))||'<span class="pempty">아직</span>')+'</table>'
+    +'<table class="pt">'+row('작품 제목',pv(data.artTitle))+row('밑그림',(esc(SK.kindName(usedKind()))+(practiceFrom(usedKind())?' · '+practiceFrom(usedKind()):''))||'<span class="pempty">아직</span>')+'</table>'
     +'<div class="pimgs">'+fig(imgs.practice,'물 조절 연습')+fig(imgs.before,beforeName())+fig(imgs.work,'완성')+'</div>'
     +(imgs.near?'<div class="pcircles"><figure><img src="'+imgs.near+'" alt="">가까운 곳</figure><figure><img src="'+imgs.far+'" alt="">먼 곳</figure></div>':'')
     +'<table class="pt">'+row('가까운 곳은',pv(data.nearHow))+row('먼 곳은',pv(data.farHow))+row('고치고 싶은 곳',pv(data.fixWhat))
